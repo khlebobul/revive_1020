@@ -1,0 +1,4 @@
+[submodule "upstream"]
+	path = upstream
+	url = https://github.com/koenkooi/foo2zjs.git
+	ignore = untracked

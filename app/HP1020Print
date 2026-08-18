@@ -1,0 +1,35 @@
+#!/bin/zsh
+set -u
+
+resources=${0:A:h:h}/Resources
+
+if (( $# == 0 )); then
+    file=$(osascript -e 'POSIX path of (choose file of type {"com.adobe.pdf", "com.adobe.postscript"} with prompt "Choose a PDF or PostScript file")') || exit 0
+    set -- "$file"
+fi
+
+copies=$(osascript <<'APPLESCRIPT') || exit 0
+repeat
+    set answer to display dialog "Number of copies for each document (1–99):" default answer "1" with title "HP LaserJet 1020" buttons {"Cancel", "Print"} default button "Print" cancel button "Cancel"
+    try
+        set count to (text returned of answer) as integer
+        if count is greater than or equal to 1 and count is less than or equal to 99 then return count
+    end try
+    display alert "Enter a whole number from 1 to 99."
+end repeat
+APPLESCRIPT
+
+for file in "$@"; do
+    log=$(mktemp -t hp1020-log)
+    if "$resources/print.sh" --copies "$copies" "$file" >"$log" 2>&1; then
+        osascript -e 'display notification "Print job sent" with title "HP LaserJet 1020"'
+    else
+        message=$(tail -n 8 "$log")
+        osascript - "$message" <<'APPLESCRIPT'
+on run argv
+    display dialog (item 1 of argv) with title "HP LaserJet 1020" buttons {"OK"} default button "OK"
+end run
+APPLESCRIPT
+    fi
+    rm -f -- "$log"
+done
