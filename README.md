@@ -22,23 +22,13 @@ The old HP, Apple, and Gutenprint packages depend on printing components that
 are no longer reliable on current macOS releases. This project replaces that
 path with a small userspace pipeline:
 
-```text
-PDF or PostScript
-        |
-        v
-Ghostscript / ps2write
-        |
-        v
-foo2zjs (-P -z1 -L0, A4, 600 dpi)
-        |
-        v
-ZjStream + JBIG raster data
-        |
-        v
-libusb bulk OUT
-        |
-        v
-HP LaserJet 1020
+```mermaid
+flowchart TD
+    A[PDF or PostScript] --> B[Ghostscript / ps2write]
+    B --> C[foo2zjs<br/>-P -z1 -L0 · A4 · 600 dpi]
+    C --> D[ZjStream + JBIG raster data]
+    D --> E[libusb bulk OUT]
+    E --> F[HP LaserJet 1020]
 ```
 
 ## Features
@@ -238,34 +228,3 @@ them with an Apple Developer ID. Building from source is the safest option.
 For a downloaded build, use Finder's **Open** context-menu action only after
 verifying that it came from the expected repository/release.
 
-## Firmware and licensing
-
-`foo2zjs` is GPLv2 software. Its source and license are provided through the
-`upstream` submodule; see `upstream/COPYING`.
-
-The LaserJet firmware is Copyright Hewlett-Packard 2005. It is deliberately
-excluded from Git. `prepare-firmware.sh` downloads and converts it on the
-printer owner's machine. Run that script only if you accept the firmware terms
-applicable to you.
-
-Do **not** publish `firmware/sihp1020.dl` or a prebuilt `.app` containing it
-until you have verified that redistribution is permitted. Source-only GitHub
-releases avoid bundling the firmware.
-
-`hp1020_usb.c`, the launcher, and build scripts currently have no explicit
-project license. Add one before accepting external contributions or publishing
-the project as reusable open-source software.
-
-## Acknowledgments
-
-Developed with assistance from [OpenAI Codex](https://developers.openai.com/codex/).
-
-## Publishing checklist
-
-- Keep `upstream/` as the declared Git submodule.
-- Do not commit `firmware/` or the built `.app` without reviewing HP terms.
-- Choose and add a license for this project's original source.
-- Replace `YOUR_REPOSITORY_URL` above with the final GitHub clone URL.
-- Build from a clean clone using `--recurse-submodules`.
-- Test one PDF after a printer power cycle.
-- For public binary releases, use Developer ID signing and notarization.
