@@ -40,11 +40,25 @@ trap 'rm -rf -- "$work"' EXIT
 "$gs" -q -dNOPAUSE -dBATCH -sDEVICE=ps2write \
     -sOutputFile="$work/input.ps" -- "$1"
 
-(
+raster_err="$work/raster.err"
+raster_failed=0
+if ! (
     cd "$root"
     PATH="$root:$PATH" GSBIN="$gs" ./foo2zjs-wrapper \
         -r600x600 -P -z1 -L0 -p9 -n "$copies" \
         "$work/input.ps" > "$work/job.zm"
-)
+) 2>"$raster_err"; then
+    raster_failed=1
+fi
+if [[ -s "$raster_err" ]]; then
+    cat "$raster_err" >&2
+fi
+
+# foo2zjs-wrapper always exits 0, even when rasterizing fails.
+if [[ "$raster_failed" -ne 0 ]] || [[ ! -s "$work/job.zm" ]] || \
+    grep -E -q 'command not found|Not a pbm|Not a pbmraw|Not a pksmraw' "$raster_err"; then
+    print -u2 "ERROR: Rasterizing failed. The document was not sent to the printer."
+    exit 1
+fi
 
 "$root/hp1020_usb" --send "$work/job.zm"

@@ -54,6 +54,7 @@ All technical components, binaries, firmware files, and conversion tools are bun
 - macOS (Apple Silicon or Intel)
 - Node.js (v18+) & npm
 - Xcode Command Line Tools (`clang`, `make`)
+- Ghostscript and libusb, only on the machine that builds the bundle. The build copies Ghostscript and statically links libusb into `bundled_resources/`. Printing does not use Homebrew, and it does not need GNU sed.
 
 ### Build Steps
 
