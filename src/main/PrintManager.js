@@ -40,6 +40,7 @@ class PrintManager {
 
     this.isPrinting = true;
     this.logs = [];
+    this.stderrLines = [];
     this.log(`Starting print job for file: ${path.basename(filePath)} (Copies: ${copiesNum})`);
 
     const scriptPath = path.join(this.resourcesPath, 'scripts', 'print-pipeline.sh');
@@ -91,6 +92,7 @@ class PrintManager {
         const lines = data.toString().split('\n');
         for (const line of lines) {
           if (!line.trim()) continue;
+          this.stderrLines.push(line);
           this.log(`[ERR] ${line}`);
         }
       });
@@ -104,12 +106,19 @@ class PrintManager {
 
       child.on('close', (code) => {
         this.isPrinting = false;
-        if (code === 0) {
+        const fatalLines = this.stderrLines.filter((line) =>
+          /^ERROR:/.test(line) ||
+          /command not found|Not a pbm|Not a pbmraw|Not a pksmraw/.test(line)
+        );
+        // The foo2zjs wrapper exits 0 even when rasterizing fails.
+        if (code === 0 && fatalLines.length === 0) {
           this.log('Print job successfully completed.');
           this.onProgress({ status: 'COMPLETED', message: 'Print job sent successfully!', progress: 100 });
           resolve({ success: true, logs: this.logs });
         } else {
-          const errMsg = `Print pipeline exited with code ${code}. Check logs for details.`;
+          const errMsg = fatalLines.length
+            ? fatalLines.join('\n')
+            : `Print pipeline exited with code ${code}. Check logs for details.`;
           this.log(errMsg);
           this.onProgress({ status: 'FAILED', message: errMsg, progress: 0 });
           resolve({ success: false, error: errMsg, logs: this.logs });

@@ -119,12 +119,36 @@ trap 'rm -rf -- "$work"' EXIT
     -sOutputFile="$work/input.ps" -- "$input_file"
 
 echo "[STEP 3/4] Rasterizing for HP LaserJet 1020..."
-(
+if [[ "$(uname -s)" == Darwin ]] && ! command -v gsed >/dev/null 2>&1; then
+    echo "ERROR: GNU sed (gsed) is not installed, so the document was not rasterized or sent to the printer." >&2
+    echo "Install it with: brew install gnu-sed" >&2
+    exit 1
+fi
+
+raster_err="$work/raster.err"
+raster_failed=0
+if ! (
     cd "$bin_dir"
     PATH="$bin_dir:$scripts_dir:$PATH" GSBIN="$gs_bin" "$wrapper" \
         -r600x600 -P -z1 -L0 -p9 -n "$copies" \
         "$work/input.ps" > "$work/job.zm"
-)
+) 2>"$raster_err"; then
+    raster_failed=1
+fi
+if [[ -s "$raster_err" ]]; then
+    cat "$raster_err" >&2
+fi
+
+# foo2zjs-wrapper always exits 0, even when gsed is missing or the
+# raster data is not a PBM. Do not send that output to the printer.
+if [[ "$raster_failed" -ne 0 ]] || [[ ! -s "$work/job.zm" ]] || \
+    grep -E -q 'command not found|Not a pbm|Not a pbmraw|Not a pksmraw' "$raster_err"; then
+    echo "ERROR: Rasterizing failed, so the document was not sent to the printer." >&2
+    if grep -q 'gsed' "$raster_err"; then
+        echo "GNU sed (gsed) is required. Install it with: brew install gnu-sed" >&2
+    fi
+    exit 1
+fi
 
 echo "[STEP 4/4] Sending data to printer..."
 "$hp_usb" --send "$work/job.zm"

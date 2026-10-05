@@ -646,6 +646,17 @@ body {
 .print-status-box.hidden {
   display: none;
 }
+.print-status-box.is-error {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.35);
+  color: #fda4af;
+}
+.print-status-box.is-error .spinner {
+  display: none;
+}
+#printErrorMessage {
+  white-space: pre-wrap;
+}
 
 /* Spinner */
 .spinner {

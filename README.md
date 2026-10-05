@@ -54,6 +54,13 @@ All technical components, binaries, firmware files, and conversion tools are bun
 - macOS (Apple Silicon or Intel)
 - Node.js (v18+) & npm
 - Xcode Command Line Tools (`clang`, `make`)
+- Homebrew packages for the native build and the print pipeline: Ghostscript, libusb, and GNU sed (`gsed`)
+
+```sh
+brew install ghostscript libusb gnu-sed
+```
+
+Without `gsed`, rasterizing fails. The app reports that error and does not send the document to the printer.
 
 ### Build Steps
 

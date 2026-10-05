@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnPrint = document.getElementById('btnPrint');
   const printStatusBox = document.getElementById('printStatusBox');
   const printStatusText = document.getElementById('printStatusText');
+  const printErrorCard = document.getElementById('printErrorCard');
+  const printErrorMessage = document.getElementById('printErrorMessage');
 
   // DOM Elements - Logs Tab
   const logsOutput = document.getElementById('logsOutput');
@@ -241,20 +243,31 @@ document.addEventListener('DOMContentLoaded', () => {
   // ----------------------------------------------------
   // 6. Print Execution
   // ----------------------------------------------------
+  function hidePrintError() {
+    printErrorCard.classList.add('hidden');
+    printErrorMessage.textContent = '';
+    printStatusBox.classList.remove('is-error');
+  }
+
   window.electronAPI.onPrintProgress((data) => {
-    const { status, message, progress } = data;
+    const { status, message } = data;
     printStatusBox.classList.remove('hidden');
     printStatusText.textContent = message;
 
     if (status === 'COMPLETED') {
+      hidePrintError();
       setTimeout(() => {
         printStatusBox.classList.add('hidden');
         alert('Print job sent successfully to HP LaserJet 1020!');
       }, 1000);
     } else if (status === 'FAILED') {
-      setTimeout(() => {
-        printStatusBox.classList.add('hidden');
-      }, 2000);
+      printStatusBox.classList.add('is-error');
+      printStatusText.textContent = 'Print failed. The document was not sent.';
+      printErrorMessage.textContent = message;
+      printErrorCard.classList.remove('hidden');
+      printErrorCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+      hidePrintError();
     }
   });
 
@@ -262,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!selectedFilePath) return;
 
     btnPrint.disabled = true;
+    hidePrintError();
     printStatusBox.classList.remove('hidden');
     printStatusText.textContent = 'Initiating print process...';
 
@@ -270,7 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnPrint.disabled = false;
     if (!result.success) {
-      alert(`Print Failed: ${result.error}`);
+      printStatusBox.classList.add('is-error');
+      printErrorMessage.textContent = result.error;
+      printErrorCard.classList.remove('hidden');
     }
   });
 
